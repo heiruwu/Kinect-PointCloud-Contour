@@ -1,11 +1,13 @@
-#include <iostream> //Standard Library
+#include <iostream>             //Standard Library
 #include <array>
 #include <thread>
 #include <chrono>
-#include <Kinect.h> //Linect for Windows SDK Header
+#include <Kinect.h>             //Linect for Windows SDK Header
 #include <opencv2/core.hpp>		//open cv
 #include <opencv2/highgui.hpp>	//header
 #include <opencv2/imgproc.hpp>
+#include <pcl/io/pcd_io.h>      //Point Cloud Library Header, contains the def for
+#include <pcl/point_types.h>    //PCD I/O operations and several PointT type structures
 
 using namespace std;
 bool isDetected = false;
@@ -81,6 +83,9 @@ bool isBorder(BYTE* buffer, int x, int y, int width, int height) {
 
 
 int main(int argc, char** argv) {
+	/**/
+	pcl::PointCloud<pcl::PointXYZ> cloud;
+
 	/*get default sensor*/
 	cout << "Try to get default sensor" << endl;
 	IKinectSensor* sensor = nullptr;

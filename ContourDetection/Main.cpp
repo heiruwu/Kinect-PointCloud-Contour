@@ -1,13 +1,21 @@
+#ifdef _DEBUG
+#define _SCL_SECURE_NO_WARNINGS
+#endif
+
 #include <iostream>             //Standard Library
-#include <array>
 #include <thread>
 #include <chrono>
 #include <Kinect.h>             //Linect for Windows SDK Header
 #include <opencv2/core.hpp>		//open cv
 #include <opencv2/highgui.hpp>	//header
 #include <opencv2/imgproc.hpp>
+
 #include <pcl/io/pcd_io.h>      //Point Cloud Library Header, contains the def for
 #include <pcl/point_types.h>    //PCD I/O operations and several PointT type structures
+#include <pcl/visualization/pcl_visualizer.h>
+#include "kinect2_grabber.h"
+
+typedef pcl::PointXYZRGBA PointType;
 
 using namespace std;
 bool isDetected = false;
@@ -83,9 +91,6 @@ bool isBorder(BYTE* buffer, int x, int y, int width, int height) {
 
 
 int main(int argc, char** argv) {
-	/**/
-	pcl::PointCloud<pcl::PointXYZ> cloud;
-
 	/*get default sensor*/
 	cout << "Try to get default sensor" << endl;
 	IKinectSensor* sensor = nullptr;
@@ -148,6 +153,29 @@ int main(int argc, char** argv) {
 		cv::Vec3b(0,0,0),
 	};
 
+	/*PCL Visualizer*/
+	boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(
+		new pcl::visualization::PCLVisualizer("Point Cloud Viewer"));
+	viewer->setCameraPosition(0.0, 0.0, -2.5, 0.0, 0.0, 0.0);
+
+	/*Point Cloud*/
+	pcl::PointCloud<PointType>::ConstPtr cloud;
+
+	/*Retrieved Point Cloud Callback Function*/
+	boost::mutex mutex;
+	boost::function<void(const pcl::PointCloud<PointType>::ConstPtr&)> function =
+		[&cloud, &mutex](const pcl::PointCloud<PointType>::ConstPtr& ptr) {
+		boost::mutex::scoped_lock lock(mutex);
+		/* Point Cloud Processing */
+		cloud = ptr->makeShared();
+	};
+
+	/*Kinect2Grabber*/
+	boost::shared_ptr<pcl::Grabber> grabber = boost::make_shared<pcl::Kinect2Grabber>();
+
+	/*Register Callback Function*/
+	boost::signals2::connection connection = grabber->registerCallback(function);
+
 	/*set timer*/
 	Timer captureTimer;
 	captureTimer.start(img);
@@ -170,6 +198,8 @@ int main(int argc, char** argv) {
 					if (bodyIdx < 6) {
 						if (!isDetected) {
 							cout << "Body detected" << endl;
+							/*start grabber*/
+							grabber->start();
 							isDetected = true;
 						}
 						if (isBorder(buffer, x, y, width, height) == true) {
@@ -199,12 +229,23 @@ int main(int argc, char** argv) {
 
 				}
 			}
-			///convert from 16bit to 8bit
-			///depthImg.convertTo(img8bit, CV_8U, 255.0f / depthMax);
+			/*update viwer*/
+			viewer->spinOnce();
+			boost::mutex::scoped_try_lock lock(mutex);
+			if (lock.owns_lock() && cloud) {
+				/*update point cloud*/
+				if (!viewer->updatePointCloud(cloud, "cloud")) {
+					viewer->addPointCloud(cloud, "cloud");
+				}
+			}
 			cv::imshow("contour detect", img);
-			//release frame
+			/*release frame*/
 			bodyFrame->Release();
 			if (cv::waitKey(30) == VK_ESCAPE) {
+				grabber->stop();
+				if (connection.connected()) {
+					connection.disconnect();
+				}
 				break;
 			}
 		}

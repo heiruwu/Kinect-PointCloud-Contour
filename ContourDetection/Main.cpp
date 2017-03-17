@@ -36,8 +36,9 @@ public:
 	//typedef std::chrono::milliseconds Interval;
 	//typedef std::function<void(void)> Timeout;
 	typedef cv::Mat Img;
+	typedef boost::shared_ptr<pcl::Grabber> Grabber;
 
-	void start(Img img) {
+	void start(Img img, Grabber grabber) {
 		countDown = COUNT_DOWN_VALUE;
 		countImg = IMG_COUNT_VALUE;
 		timerThread = thread([=]() {
@@ -180,7 +181,7 @@ int main(int argc, char** argv) {
 
 	/*set timer*/
 	Timer captureTimer;
-	//captureTimer.start(img);
+	captureTimer.start(img, grabber);
 
 	/*enter loop*/
 	while (true) {
@@ -244,7 +245,9 @@ int main(int argc, char** argv) {
 			/*release frame*/
 			bodyFrame->Release();
 			if (cv::waitKey(30) == VK_ESCAPE) {
-				grabber->stop();
+				if (grabber->isRunning()) {
+					grabber->stop();
+				}
 				if (connection.connected()) {
 					connection.disconnect();
 				}

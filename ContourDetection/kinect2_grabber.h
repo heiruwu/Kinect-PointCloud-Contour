@@ -365,7 +365,7 @@ namespace pcl
                 signal_PointXYZRGBA->operator()( convertRGBADepthToPointXYZRGBA( &colorBuffer[0], &depthBuffer[0] ) );
             }
         }
-		pcl::io::savePLYFile("Kinect_pointcloud.ply", savePLY(&depthBuffer[0]));
+		pcl::io::savePLYFileASCII("Kinect_pointcloud.ply", savePLY(&depthBuffer[0]));
     }
 
 	pcl::PointCloud<pcl::PointXYZ> pcl::Kinect2Grabber::savePLY(UINT16* depthBuffer) {
@@ -376,8 +376,6 @@ namespace pcl
 		saveCloud.is_dense = false;
 
 		saveCloud.points.resize(saveCloud.height * saveCloud.width);
-
-		pcl::io::savePLYFileASCII("kinect_pointcloud.ply", saveCloud);
 
 		pcl::PointXYZ* ptS = &saveCloud.points[0];
 		for (int y = 0; y < depthHeight; y++) {
@@ -395,6 +393,7 @@ namespace pcl
 				point.z = cameraSpacePoint.Z;
 
 				*ptS = point;
+				
 			}
 		}
 		return saveCloud;

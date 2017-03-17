@@ -10,6 +10,7 @@
 
 #include <pcl/io/boost.h>
 #include <pcl/io/grabber.h>
+#include <pcl/io/ply_io.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
@@ -34,6 +35,7 @@ namespace pcl
     class Kinect2Grabber : public pcl::Grabber
     {
         public:
+			pcl::PointCloud<pcl::PointXYZ> saveCloud;
             Kinect2Grabber();
             virtual ~Kinect2Grabber() throw ();
             virtual void start();
@@ -48,6 +50,7 @@ namespace pcl
             typedef void ( signal_Kinect2_PointXYZRGBA )( const boost::shared_ptr<const pcl::PointCloud<pcl::PointXYZRGBA>>& );
 
         protected:
+
             boost::signals2::signal<signal_Kinect2_PointXYZ>* signal_PointXYZ;
             boost::signals2::signal<signal_Kinect2_PointXYZI>* signal_PointXYZI;
             boost::signals2::signal<signal_Kinect2_PointXYZRGB>* signal_PointXYZRGB;
@@ -275,6 +278,7 @@ namespace pcl
 
     void pcl::Kinect2Grabber::stop()
     {
+		pcl::io::savePLYFileASCII("kinect_pointcloud.ply", saveCloud);
         boost::unique_lock<boost::mutex> lock( mutex );
 
         quit = true;
@@ -363,17 +367,25 @@ namespace pcl
         }
     }
 
+
     pcl::PointCloud<pcl::PointXYZ>::Ptr pcl::Kinect2Grabber::convertDepthToPointXYZ( UINT16* depthBuffer )
     {
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud( new pcl::PointCloud<pcl::PointXYZ>() );
-
+		
         cloud->width = static_cast<uint32_t>( depthWidth );
         cloud->height = static_cast<uint32_t>( depthHeight );
         cloud->is_dense = false;
 
         cloud->points.resize( cloud->height * cloud->width );
 
+		saveCloud.width = static_cast<uint32_t>(depthWidth);
+		saveCloud.height = static_cast<uint32_t>(depthHeight);
+		saveCloud.is_dense = false;
+
+		saveCloud.points.resize(saveCloud.height * saveCloud.width);
+
         pcl::PointXYZ* pt = &cloud->points[0];
+		pcl::PointXYZ* ptS = &saveCloud.points[0];
         for( int y = 0; y < depthHeight; y++ ){
             for( int x = 0; x < depthWidth; x++, pt++ ){
                 pcl::PointXYZ point;
@@ -389,9 +401,9 @@ namespace pcl
                 point.z = cameraSpacePoint.Z;
 
                 *pt = point;
+				*ptS = point;
             }
         }
-
         return cloud;
     }
 

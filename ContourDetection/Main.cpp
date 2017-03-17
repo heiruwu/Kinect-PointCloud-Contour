@@ -10,12 +10,15 @@
 #include <opencv2/highgui.hpp>	//header
 #include <opencv2/imgproc.hpp>
 
+#include <pcl/point_cloud.h>
+#include <pcl/io/file_io.h>
 #include <pcl/io/pcd_io.h>      //Point Cloud Library Header, contains the def for
 #include <pcl/point_types.h>    //PCD I/O operations and several PointT type structures
 #include <pcl/visualization/pcl_visualizer.h>
 #include "kinect2_grabber.h"
 
-typedef pcl::PointXYZRGBA PointType;
+//typedef pcl::PointXYZRGBA PointType;
+typedef pcl::PointXYZ PointType;
 
 using namespace std;
 bool isDetected = false;
@@ -160,7 +163,6 @@ int main(int argc, char** argv) {
 
 	/*Point Cloud*/
 	pcl::PointCloud<PointType>::ConstPtr cloud;
-
 	/*Retrieved Point Cloud Callback Function*/
 	boost::mutex mutex;
 	boost::function<void(const pcl::PointCloud<PointType>::ConstPtr&)> function =

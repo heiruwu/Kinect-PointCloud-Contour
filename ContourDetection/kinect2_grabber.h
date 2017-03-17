@@ -35,7 +35,7 @@ namespace pcl
     class Kinect2Grabber : public pcl::Grabber
     {
         public:
-			pcl::PointCloud<pcl::PointXYZ> saveCloud;
+			
             Kinect2Grabber();
             virtual ~Kinect2Grabber() throw ();
             virtual void start();
@@ -56,6 +56,7 @@ namespace pcl
             boost::signals2::signal<signal_Kinect2_PointXYZRGB>* signal_PointXYZRGB;
             boost::signals2::signal<signal_Kinect2_PointXYZRGBA>* signal_PointXYZRGBA;
 
+			pcl::PointCloud<pcl::PointXYZ> savePLY(UINT16* depthBuffer);
             pcl::PointCloud<pcl::PointXYZ>::Ptr convertDepthToPointXYZ( UINT16* depthBuffer );
             pcl::PointCloud<pcl::PointXYZI>::Ptr convertInfraredDepthToPointXYZI( UINT16* infraredBuffer, UINT16* depthBuffer );
             pcl::PointCloud<pcl::PointXYZRGB>::Ptr convertRGBDepthToPointXYZRGB( RGBQUAD* colorBuffer, UINT16* depthBuffer );
@@ -278,7 +279,6 @@ namespace pcl
 
     void pcl::Kinect2Grabber::stop()
     {
-		pcl::io::savePLYFileASCII("kinect_pointcloud.ply", saveCloud);
         boost::unique_lock<boost::mutex> lock( mutex );
 
         quit = true;
@@ -365,7 +365,40 @@ namespace pcl
                 signal_PointXYZRGBA->operator()( convertRGBADepthToPointXYZRGBA( &colorBuffer[0], &depthBuffer[0] ) );
             }
         }
+		pcl::io::savePLYFile("Kinect_pointcloud.ply", savePLY(&depthBuffer[0]));
     }
+
+	pcl::PointCloud<pcl::PointXYZ> pcl::Kinect2Grabber::savePLY(UINT16* depthBuffer) {
+		pcl::PointCloud<pcl::PointXYZ> saveCloud;
+
+		saveCloud.width = static_cast<uint32_t>(depthWidth);
+		saveCloud.height = static_cast<uint32_t>(depthHeight);
+		saveCloud.is_dense = false;
+
+		saveCloud.points.resize(saveCloud.height * saveCloud.width);
+
+		pcl::io::savePLYFileASCII("kinect_pointcloud.ply", saveCloud);
+
+		pcl::PointXYZ* ptS = &saveCloud.points[0];
+		for (int y = 0; y < depthHeight; y++) {
+			for (int x = 0; x < depthWidth; x++, ptS++) {
+				pcl::PointXYZ point;
+
+				DepthSpacePoint depthSpacePoint = { static_cast<float>(x), static_cast<float>(y) };
+				UINT16 depth = depthBuffer[y * depthWidth + x];
+
+				// Coordinate Mapping Depth to Camera Space, and Setting PointCloud XYZ
+				CameraSpacePoint cameraSpacePoint = { 0.0f, 0.0f, 0.0f };
+				mapper->MapDepthPointToCameraSpace(depthSpacePoint, depth, &cameraSpacePoint);
+				point.x = cameraSpacePoint.X;
+				point.y = cameraSpacePoint.Y;
+				point.z = cameraSpacePoint.Z;
+
+				*ptS = point;
+			}
+		}
+		return saveCloud;
+	}
 
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr pcl::Kinect2Grabber::convertDepthToPointXYZ( UINT16* depthBuffer )
@@ -378,14 +411,7 @@ namespace pcl
 
         cloud->points.resize( cloud->height * cloud->width );
 
-		saveCloud.width = static_cast<uint32_t>(depthWidth);
-		saveCloud.height = static_cast<uint32_t>(depthHeight);
-		saveCloud.is_dense = false;
-
-		saveCloud.points.resize(saveCloud.height * saveCloud.width);
-
         pcl::PointXYZ* pt = &cloud->points[0];
-		pcl::PointXYZ* ptS = &saveCloud.points[0];
         for( int y = 0; y < depthHeight; y++ ){
             for( int x = 0; x < depthWidth; x++, pt++ ){
                 pcl::PointXYZ point;
@@ -401,7 +427,6 @@ namespace pcl
                 point.z = cameraSpacePoint.Z;
 
                 *pt = point;
-				*ptS = point;
             }
         }
         return cloud;

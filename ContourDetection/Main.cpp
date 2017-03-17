@@ -180,7 +180,7 @@ int main(int argc, char** argv) {
 
 	/*set timer*/
 	Timer captureTimer;
-	captureTimer.start(img);
+	//captureTimer.start(img);
 
 	/*enter loop*/
 	while (true) {

@@ -181,10 +181,15 @@ int main(int argc, char** argv) {
 
 	/*set timer*/
 	Timer captureTimer;
-	captureTimer.start(img, grabber);
+	//captureTimer.start(img, grabber);
+
+	/*stream for variables saving*/
+	ofstream stream;
+	stream.open("measurement.txt");
 
 	/*enter loop*/
 	while (true) {
+		stream << "Header. \n";
 		/*get last frame*/
 		IBodyIndexFrame* bodyFrame = nullptr;
 		//IDepthFrame* depthFrame = nullptr;
@@ -207,29 +212,20 @@ int main(int argc, char** argv) {
 						}
 						if (isBorder(buffer, x, y, width, height) == true) {
 							img.at<cv::Vec3b>(y, x) = colorTable[0];
-							/*switch (bodyIdx) {
-							case 0:img.at<cv::Vec3b>(y, x) = colorTable[0];
-							break;
-							case 1:img.at<cv::Vec3b>(y, x) = colorTable[1];
-							break;
-							case 2:img.at<cv::Vec3b>(y, x) = colorTable[2];
-							break;
-							case 3:img.at<cv::Vec3b>(y, x) = colorTable[3];
-							break;
-							case 4:img.at<cv::Vec3b>(y, x) = colorTable[4];
-							break;
-							case 5:img.at<cv::Vec3b>(y, x) = colorTable[5];
-							break;
-							}*/
+							stream << "@";
 						}
 						else {
 							img.at<cv::Vec3b>(y, x) = colorTable[6];
+							stream << "-";
 						}
 					}
 					else {
 						img.at<cv::Vec3b>(y, x) = colorTable[6];
+						stream << "-";
 					}
-
+					if (x == width - 1) {
+						stream << "\n";
+					}
 				}
 			}
 			/*update viwer*/
@@ -255,6 +251,7 @@ int main(int argc, char** argv) {
 			}
 		}
 	}
+	stream.close();
 	/*release frame reader*/
 	bodyFrameReader->Release();
 	bodyFrameReader = nullptr;

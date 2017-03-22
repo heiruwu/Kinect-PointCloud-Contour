@@ -15,7 +15,7 @@
 #include <pcl/io/pcd_io.h>      //Point Cloud Library Header, contains the def for
 #include <pcl/point_types.h>    //PCD I/O operations and several PointT type structures
 #include <pcl/visualization/pcl_visualizer.h>
-#include "kinect2_grabber.h"
+#include <kinect2_grabber.h>
 
 //typedef pcl::PointXYZRGBA PointType;
 typedef pcl::PointXYZ PointType;

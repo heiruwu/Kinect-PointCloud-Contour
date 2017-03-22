@@ -14,8 +14,10 @@
 #include <pcl/io/obj_io.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl/filters/filter.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/features/normal_3d.h>
+#include <pcl/surface/mls.h>
 #include <pcl/surface/gp3.h>
 
 
@@ -376,7 +378,10 @@ namespace pcl
 
 	void pcl::Kinect2Grabber::constructObj() {
 		cout << "Start processing mesh" << endl;
-		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = convertDepthToPointXYZ(&depthBuffer[0]);
+		std::vector<int> indices;
+		//pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = convertDepthToPointXYZ(&depthBuffer[0]);
+		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
+		pcl::removeNaNFromPointCloud(*convertDepthToPointXYZ(&depthBuffer[0]), *cloud, indices);
 
 		/*Normal estimation*/
 		pcl::NormalEstimation < pcl::PointXYZ, pcl::Normal> normal;
@@ -391,6 +396,18 @@ namespace pcl
 		/*Generate the XZY and normal fields*/
 		pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals(new pcl::PointCloud<pcl::PointNormal>);
 		pcl::concatenateFields(*cloud, *normals, *cloud_with_normals);
+
+		/*MovingLeastSquares processing
+		pcl::MovingLeastSquares<pcl::PointXYZ, pcl::PointNormal> mls;
+		mls.setComputeNormals(true);
+		// Set parameters
+		mls.setInputCloud(cloud);
+		mls.setPolynomialFit(true);
+		mls.setSearchMethod(tree);
+		mls.setSearchRadius(0.03);
+
+		// Reconstruct
+		mls.process(*cloud_with_normals);*/
 
 		// Create search tree*
 		pcl::search::KdTree<pcl::PointNormal>::Ptr tree2(new pcl::search::KdTree<pcl::PointNormal>);

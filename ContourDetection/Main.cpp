@@ -158,9 +158,9 @@ int main(int argc, char** argv) {
 	};
 
 	/*PCL Visualizer*/
-	boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(
-		new pcl::visualization::PCLVisualizer("Point Cloud Viewer"));
-	viewer->setCameraPosition(0.0, 0.0, -2.5, 0.0, 0.0, 0.0);
+	//boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(
+	//	new pcl::visualization::PCLVisualizer("Point Cloud Viewer"));
+	//viewer->setCameraPosition(0.0, 0.0, -2.5, 0.0, 0.0, 0.0);
 
 	/*Point Cloud*/
 	pcl::PointCloud<PointType>::ConstPtr cloud;
@@ -181,15 +181,15 @@ int main(int argc, char** argv) {
 
 	/*set timer*/
 	Timer captureTimer;
-	//captureTimer.start(img, grabber);
+	captureTimer.start(img, grabber);
 
 	/*stream for variables saving*/
-	ofstream stream;
-	stream.open("measurement.txt");
+	//ofstream stream;
+	//stream.open("measurement.txt");
 
 	/*enter loop*/
 	while (true) {
-		stream << "Header. \n";
+		//stream << "Header. \n";
 		/*get last frame*/
 		IBodyIndexFrame* bodyFrame = nullptr;
 		//IDepthFrame* depthFrame = nullptr;
@@ -207,36 +207,37 @@ int main(int argc, char** argv) {
 						if (!isDetected) {
 							cout << "Body detected" << endl;
 							/*start grabber*/
-							grabber->start();
+							//grabber->start();
 							isDetected = true;
 						}
-						if (isBorder(buffer, x, y, width, height) == true) {
+						/*if (isBorder(buffer, x, y, width, height) == true) {
 							img.at<cv::Vec3b>(y, x) = colorTable[0];
 							stream << "@";
 						}
 						else {
 							img.at<cv::Vec3b>(y, x) = colorTable[6];
 							stream << "-";
-						}
+						}*/
+						img.at<cv::Vec3b>(y, x) = colorTable[0];
 					}
 					else {
 						img.at<cv::Vec3b>(y, x) = colorTable[6];
-						stream << "-";
+						//stream << "-";
 					}
 					if (x == width - 1) {
-						stream << "\n";
+						//stream << "\n";
 					}
 				}
 			}
 			/*update viwer*/
-			viewer->spinOnce();
-			boost::mutex::scoped_try_lock lock(mutex);
-			if (lock.owns_lock() && cloud) {
-				/*update point cloud*/
-				if (!viewer->updatePointCloud(cloud, "cloud")) {
-					viewer->addPointCloud(cloud, "cloud");
-				}
-			}
+			//viewer->spinOnce();
+			//boost::mutex::scoped_try_lock lock(mutex);
+			//if (lock.owns_lock() && cloud) {
+			//	/*update point cloud*/
+			//	if (!viewer->updatePointCloud(cloud, "cloud")) {
+			//		viewer->addPointCloud(cloud, "cloud");
+			//	}
+			//}
 			cv::imshow("contour detect", img);
 			/*release frame*/
 			bodyFrame->Release();
@@ -251,7 +252,7 @@ int main(int argc, char** argv) {
 			}
 		}
 	}
-	stream.close();
+	//stream.close();
 	/*release frame reader*/
 	bodyFrameReader->Release();
 	bodyFrameReader = nullptr;

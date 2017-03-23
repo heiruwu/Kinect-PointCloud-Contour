@@ -184,8 +184,8 @@ int main(int argc, char** argv) {
 	captureTimer.start(img, grabber);
 
 	/*stream for variables saving*/
-	//ofstream stream;
-	//stream.open("measurement.txt");
+	ofstream stream;
+	stream.open("measurement.txt");
 
 	/*enter loop*/
 	while (true) {
@@ -210,22 +210,21 @@ int main(int argc, char** argv) {
 							//grabber->start();
 							isDetected = true;
 						}
-						/*if (isBorder(buffer, x, y, width, height) == true) {
+						if (isBorder(buffer, x, y, width, height) == true) {
 							img.at<cv::Vec3b>(y, x) = colorTable[0];
 							stream << "@";
 						}
 						else {
 							img.at<cv::Vec3b>(y, x) = colorTable[6];
 							stream << "-";
-						}*/
-						img.at<cv::Vec3b>(y, x) = colorTable[0];
+						}
 					}
 					else {
 						img.at<cv::Vec3b>(y, x) = colorTable[6];
-						//stream << "-";
+						stream << "-";
 					}
 					if (x == width - 1) {
-						//stream << "\n";
+						stream << "\n";
 					}
 				}
 			}
@@ -252,7 +251,7 @@ int main(int argc, char** argv) {
 			}
 		}
 	}
-	//stream.close();
+	stream.close();
 	/*release frame reader*/
 	bodyFrameReader->Release();
 	bodyFrameReader = nullptr;

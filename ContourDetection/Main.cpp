@@ -212,16 +212,16 @@ int main(int argc, char** argv) {
 						}
 						if (isBorder(buffer, x, y, width, height) == true) {
 							img.at<cv::Vec3b>(y, x) = colorTable[0];
-							stream << "@";
+							stream << "¤f";
 						}
 						else {
 							img.at<cv::Vec3b>(y, x) = colorTable[6];
-							stream << "-";
+							stream << "¤@";
 						}
 					}
 					else {
 						img.at<cv::Vec3b>(y, x) = colorTable[6];
-						stream << "-";
+						stream << "¤@";
 					}
 					if (x == width - 1) {
 						stream << "\n";
@@ -252,6 +252,7 @@ int main(int argc, char** argv) {
 		}
 	}
 	stream.close();
+	cout << "stream closed" << endl;
 	/*release frame reader*/
 	bodyFrameReader->Release();
 	bodyFrameReader = nullptr;

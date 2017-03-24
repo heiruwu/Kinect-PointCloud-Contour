@@ -379,57 +379,60 @@ namespace pcl
 	void pcl::Kinect2Grabber::constructObj() {
 		cout << "Start processing mesh" << endl;
 		std::vector<int> indices;
-		//pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = convertDepthToPointXYZ(&depthBuffer[0]);
 		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
 		pcl::removeNaNFromPointCloud(*convertDepthToPointXYZ(&depthBuffer[0]), *cloud, indices);
 
-		/*Normal estimation*/
-		pcl::NormalEstimation < pcl::PointXYZ, pcl::Normal> normal;
-		pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
 		pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
-		tree->setInputCloud(cloud);
-		normal.setInputCloud(cloud);
-		normal.setSearchMethod(tree);
-		normal.setKSearch(20);
-		normal.compute(*normals);
-
-		/*Generate the XZY and normal fields*/
-		pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals(new pcl::PointCloud<pcl::PointNormal>);
-		pcl::concatenateFields(*cloud, *normals, *cloud_with_normals);
-
-		/*MovingLeastSquares processing
+		pcl::PointCloud<pcl::PointNormal>::Ptr mls_points(new pcl::PointCloud<pcl::PointNormal>);
+		//MovingLeastSquares processing
 		pcl::MovingLeastSquares<pcl::PointXYZ, pcl::PointNormal> mls;
 		mls.setComputeNormals(true);
 		// Set parameters
 		mls.setInputCloud(cloud);
 		mls.setPolynomialFit(true);
 		mls.setSearchMethod(tree);
-		mls.setSearchRadius(0.03);
+		mls.setSearchRadius(0.05);
 
 		// Reconstruct
-		mls.process(*cloud_with_normals);*/
+		mls.process(*mls_points);
+
+		/*Normal estimation*/
+		//pcl::NormalEstimation < pcl::PointXYZ, pcl::Normal> normal;
+		//pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
+		//pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
+		//tree->setInputCloud(cloud);
+		//normal.setInputCloud(cloud);
+		//normal.setSearchMethod(tree);
+		
+		//normal.setKSearch(40);
+		//normal.compute(*normals);
+
+		/*Generate the XZY and normal fields*/
+		//pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals(new pcl::PointCloud<pcl::PointNormal>);
+		//pcl::concatenateFields(*cloud, *normals, *cloud_with_normals);
 
 		// Create search tree*
 		pcl::search::KdTree<pcl::PointNormal>::Ptr tree2(new pcl::search::KdTree<pcl::PointNormal>);
-		tree2->setInputCloud(cloud_with_normals);
-
+		//tree2->setInputCloud(cloud_with_normals);
+		tree2->setInputCloud(mls_points);
 		// Initialize objects
 		pcl::GreedyProjectionTriangulation<pcl::PointNormal> gp3;
 		pcl::PolygonMesh triangles;
 
 		// Set the maximum distance between connected points (maximum edge length)
-		gp3.setSearchRadius(0.025);
+		gp3.setSearchRadius(0.05);
 
 		// Set typical values for the parameters
 		gp3.setMu(2.5);
-		gp3.setMaximumNearestNeighbors(100);
-		gp3.setMaximumSurfaceAngle(M_PI / 4); // 45 degrees
-		gp3.setMinimumAngle(M_PI / 18); // 10 degrees
-		gp3.setMaximumAngle(2 * M_PI / 3); // 120 degrees
+		gp3.setMaximumNearestNeighbors(200);
+		gp3.setMaximumSurfaceAngle(M_PI / 2); // 90 degrees
+		gp3.setMinimumAngle(M_PI / 36); // 5 degrees
+		gp3.setMaximumAngle(2 * M_PI / 2); // 180 degrees
 		gp3.setNormalConsistency(false);
 
 		// Get result
-		gp3.setInputCloud(cloud_with_normals);
+		//gp3.setInputCloud(cloud_with_normals);
+		gp3.setInputCloud(mls_points);
 		gp3.setSearchMethod(tree2);
 		gp3.reconstruct(triangles);
 		cout << "finished, start saving obj file" << endl;
@@ -465,7 +468,6 @@ namespace pcl
 				point.x = cameraSpacePoint.X;
 				point.y = cameraSpacePoint.Y;
 				point.z = cameraSpacePoint.Z;
-
 				*ptS = point;
 				
 			}
@@ -498,7 +500,6 @@ namespace pcl
                 point.x = cameraSpacePoint.X;
                 point.y = cameraSpacePoint.Y;
                 point.z = cameraSpacePoint.Z;
-
                 *pt = point;
             }
         }

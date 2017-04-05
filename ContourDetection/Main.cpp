@@ -27,18 +27,15 @@ class Timer {
 	thread timerThread;
 	const int COUNT_DOWN_VALUE = 5;
 	const int IMG_COUNT_VALUE = 2;
-	const string imgName1 = "C:\\front.jpg";
-	const string imgName2 = "C:\\side.jpg";
+	const string imgName1 = "/Users/A30286/Desktop/front.bmp";
+	const string imgName2 = "/Users/A30286/Desktop/side.bmp";
 	int countDown;
 	int countImg;
 
 public:
-	//typedef std::chrono::milliseconds Interval;
-	//typedef std::function<void(void)> Timeout;
 	typedef cv::Mat Img;
-	typedef boost::shared_ptr<pcl::Grabber> Grabber;
 
-	void start(Img img, Grabber grabber) {
+	void start(Img img) {
 		countDown = COUNT_DOWN_VALUE;
 		countImg = IMG_COUNT_VALUE;
 		timerThread = thread([=]() {
@@ -55,7 +52,8 @@ public:
 						cout << "Side captured" << endl;
 						countImg--;
 					}
-				} else if (isDetected == true) {
+				}
+				else if (isDetected == true) {
 					cout << countDown << endl;
 					this_thread::sleep_for((std::chrono::milliseconds)1000);
 					countDown--;
@@ -69,24 +67,43 @@ public:
 /*8 direction examination*/
 bool isBorder(BYTE* buffer, int x, int y, int width, int height) {
 	if (x, y > 2 && x < width - 2 && y < height - 2) {
-		int fixPont   = buffer[ x      +  y      * width];
-		int refPoint0 = buffer[(x - 1) + (y - 1) * width];
-		int refPoint1 = buffer[(x - 1) +  y      * width];
-		int refPoint2 = buffer[(x - 1) + (y + 1) * width];
-		int refPoint3 = buffer[ x      + (y - 1) * width];
-		int refPoint4 = buffer[ x      + (y + 1) * width];
-		int refPoint5 = buffer[(x + 1) + (y - 1) * width];
-		int refPoint6 = buffer[(x + 1) +  y      * width];
-		int refPoint7 = buffer[(x + 1) + (y + 1) * width];
-		if ((fixPont == refPoint0) && (fixPont == refPoint1) &&
-			(fixPont == refPoint2) && (fixPont == refPoint3) &&
-			(fixPont == refPoint4) && (fixPont == refPoint5) &&
-			(fixPont == refPoint6) && (fixPont == refPoint7)) {
+		int fixPont = buffer[x + y      * width];
+		//int refPoint0 = buffer[(x - 1) + (y - 1) * width];
+		int refPoint1 = buffer[(x - 1) + y      * width];
+		//int refPoint2 = buffer[(x - 1) + (y + 1) * width];
+		int refPoint3 = buffer[x + (y - 1) * width];
+		int refPoint4 = buffer[x + (y + 1) * width];
+		//int refPoint5 = buffer[(x + 1) + (y - 1) * width];
+		int refPoint6 = buffer[(x + 1) + y      * width];
+		//int refPoint7 = buffer[(x + 1) + (y + 1) * width];
+		if (/*(fixPont == refPoint0) &&*/ (fixPont == refPoint1) &&
+			/*(fixPont == refPoint2) &&*/ (fixPont == refPoint3) &&
+			(fixPont == refPoint4) &&/* (fixPont == refPoint5) &&*/
+			(fixPont == refPoint6)/* && (fixPont == refPoint7)*/) {
 			return false;
 		}
 		else {
 			return true;
 		}
+	}
+	else {
+		return false;
+	}
+}
+
+bool isDot(cv::Mat img, int x, int y, cv::Vec3b colorTable[7], int radius) {
+	int whiteCount = 0;
+	for (int iy = y - radius; iy <= y + radius; iy++) {
+		for (int ix = x - radius; ix <= x + radius; ix++) {
+			if ((ix != x || iy != y) && img.at<cv::Vec3b>(iy, ix) == colorTable[6]) {
+				whiteCount++;
+			}
+		}
+	}
+	int fullCount = (radius + 1 + radius) * (radius + 1 + radius) - 1;
+	if (whiteCount == fullCount)
+	{
+		return true;
 	}
 	else {
 		return false;
@@ -157,39 +174,19 @@ int main(int argc, char** argv) {
 		cv::Vec3b(0,0,0),
 	};
 
-	/*PCL Visualizer*/
-	//boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(
-	//	new pcl::visualization::PCLVisualizer("Point Cloud Viewer"));
-	//viewer->setCameraPosition(0.0, 0.0, -2.5, 0.0, 0.0, 0.0);
-
-	/*Point Cloud*/
-	pcl::PointCloud<PointType>::ConstPtr cloud;
-	/*Retrieved Point Cloud Callback Function*/
-	boost::mutex mutex;
-	boost::function<void(const pcl::PointCloud<PointType>::ConstPtr&)> function =
-		[&cloud, &mutex](const pcl::PointCloud<PointType>::ConstPtr& ptr) {
-		boost::mutex::scoped_lock lock(mutex);
-		/* Point Cloud Processing */
-		cloud = ptr->makeShared();
-	};
-
-	/*Kinect2Grabber*/
-	boost::shared_ptr<pcl::Grabber> grabber = boost::make_shared<pcl::Kinect2Grabber>();
-
-	/*Register Callback Function*/
-	boost::signals2::connection connection = grabber->registerCallback(function);
-
 	/*set timer*/
 	Timer captureTimer;
-	captureTimer.start(img, grabber);
+	captureTimer.start(img);
 
 	/*stream for variables saving*/
 	ofstream stream;
+	//ofstream streamxy;
 	stream.open("measurement.txt");
+	//streamxy.open("");
 
 	/*enter loop*/
 	while (true) {
-		//stream << "Header. \n";
+		stream << "Header. \n";
 		/*get last frame*/
 		IBodyIndexFrame* bodyFrame = nullptr;
 		//IDepthFrame* depthFrame = nullptr;
@@ -200,58 +197,41 @@ int main(int argc, char** argv) {
 			UINT size = 0;
 			BYTE *buffer = nullptr;
 			bodyFrame->AccessUnderlyingBuffer(&size, &buffer);
-			for (int y = 0; y < height; ++y) {
-				for (int x = 0; x < width; ++x) {
+			for (int y = 5; y < height - 5; ++y) {
+				for (int x = 5; x < width - 5; ++x) {
 					int bodyIdx = buffer[x + y * width];
 					if (bodyIdx < 6) {
 						if (!isDetected) {
 							cout << "Body detected" << endl;
-							/*start grabber*/
-							//grabber->start();
 							isDetected = true;
 						}
-						if (isBorder(buffer, x, y, width, height) == true) {
+						if (isBorder(buffer, x, y, width, height) == true &&
+							isDot(img, x, y, colorTable, 5) == true) {
 							img.at<cv::Vec3b>(y, x) = colorTable[0];
-							stream << "@";
 						}
 						else {
 							img.at<cv::Vec3b>(y, x) = colorTable[6];
-							stream << "-";
 						}
 					}
 					else {
 						img.at<cv::Vec3b>(y, x) = colorTable[6];
-						stream << "-";
+						stream << ".";
 					}
 					if (x == width - 1) {
 						stream << "\n";
 					}
 				}
 			}
-			/*update viwer*/
-			//viewer->spinOnce();
-			//boost::mutex::scoped_try_lock lock(mutex);
-			//if (lock.owns_lock() && cloud) {
-			//	/*update point cloud*/
-			//	if (!viewer->updatePointCloud(cloud, "cloud")) {
-			//		viewer->addPointCloud(cloud, "cloud");
-			//	}
-			//}
 			cv::imshow("contour detect", img);
 			/*release frame*/
 			bodyFrame->Release();
 			if (cv::waitKey(30) == VK_ESCAPE) {
-				if (grabber->isRunning()) {
-					grabber->stop();
-				}
-				if (connection.connected()) {
-					connection.disconnect();
-				}
 				break;
 			}
 		}
 	}
 	stream.close();
+	cout << "stream closed" << endl;
 	/*release frame reader*/
 	bodyFrameReader->Release();
 	bodyFrameReader = nullptr;
